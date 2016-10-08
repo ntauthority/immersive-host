@@ -41,8 +41,8 @@ struct TpwStubCtx
 };
 
 PTP_WORK(WINAPI* g_origCreateThreadpoolWork)(_In_        PTP_WORK_CALLBACK    pfnwk,
-	_Inout_opt_ PVOID                pv,
-	_In_opt_    PTP_CALLBACK_ENVIRON pcbe);
+											 _Inout_opt_ PVOID                pv,
+											 _In_opt_    PTP_CALLBACK_ENVIRON pcbe);
 
 VOID WINAPI TpwStub(PTP_CALLBACK_INSTANCE cb, LPVOID argument, PTP_WORK work)
 {
@@ -61,8 +61,8 @@ VOID WINAPI TpwStub(PTP_CALLBACK_INSTANCE cb, LPVOID argument, PTP_WORK work)
 }
 
 PTP_WORK WINAPI CreateThreadpoolWork_Custom(_In_        PTP_WORK_CALLBACK    pfnwk,
-	_Inout_opt_ PVOID                pv,
-	_In_opt_    PTP_CALLBACK_ENVIRON pcbe)
+											_Inout_opt_ PVOID                pv,
+											_In_opt_    PTP_CALLBACK_ENVIRON pcbe)
 {
 	return g_origCreateThreadpoolWork(TpwStub, new TpwStubCtx{ pfnwk, pv }, pcbe);
 }
@@ -75,19 +75,16 @@ LONG WINAPI MurderSceneVEH(PEXCEPTION_POINTERS ptrs)
 		bool found = false;
 
 		{
-			printf("Warning: Exception catched! Trying to prevent...\n");
-
 			std::lock_guard<std::mutex> lock(g_taskListMutex);
 
 			found = (g_runningThreadpoolTasks.find(GetCurrentThreadId()) != g_runningThreadpoolTasks.end());
 		}
-
+		
 		if (found)
 		{
 			// stub out this threadpool task
 			if (((uintptr_t)ptrs->ExceptionRecord->ExceptionAddress >> 36) == 0x7FF)
 			{
-				printf("Info: Loading Exception. Preventing Crash...\n");
 				ptrs->ContextRecord->Rip = (DWORD64)RaiseTrailBlazer;
 				ptrs->ContextRecord->Rsp &= 0xFFFFFFFFFFFFFFF0;
 				ptrs->ContextRecord->Rsp |= 8;
@@ -95,29 +92,14 @@ LONG WINAPI MurderSceneVEH(PEXCEPTION_POINTERS ptrs)
 				return EXCEPTION_CONTINUE_EXECUTION;
 			}
 			else {
-				printf("Warning: Unknown Exception! Experimental workaround...\n");
-
-				ptrs->ContextRecord->Rip = (DWORD64)RaiseTrailBlazer;
-				ptrs->ContextRecord->Rsp &= 0xFFFFFFFFFFFFFFF0;
-				ptrs->ContextRecord->Rsp |= 8;
-
-				return EXCEPTION_CONTINUE_EXECUTION;
-			}
+ 				ptrs->ContextRecord->Rip = (DWORD64)RaiseTrailBlazer;
+ 				ptrs->ContextRecord->Rsp &= 0xFFFFFFFFFFFFFFF0;
+ 				ptrs->ContextRecord->Rsp |= 8;
+ 
+ 				return EXCEPTION_CONTINUE_EXECUTION;
+ 			}
+ 		}
 		}
-		else {
-			if (((uintptr_t)ptrs->ExceptionRecord->ExceptionAddress >> 36) == 0x7FF)
-			{
-				printf("Error: Unknown Exception! It will most likely crash...\n");
-				ptrs->ContextRecord->Rip = (DWORD64)RaiseTrailBlazer;
-				ptrs->ContextRecord->Rsp &= 0xFFFFFFFFFFFFFFF0;
-				ptrs->ContextRecord->Rsp |= 8;
-
-				return EXCEPTION_CONTINUE_EXECUTION;
-			}
-		}
-
-
-		printf("Error: DRM/Online Exception! Can't recover\n");
 	}
 
 	return EXCEPTION_CONTINUE_SEARCH;
