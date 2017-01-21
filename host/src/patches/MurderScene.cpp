@@ -91,6 +91,14 @@ LONG WINAPI MurderSceneVEH(PEXCEPTION_POINTERS ptrs)
 
 				return EXCEPTION_CONTINUE_EXECUTION;
 			}
+			else {
+ 				ptrs->ContextRecord->Rip = (DWORD64)RaiseTrailBlazer;
+ 				ptrs->ContextRecord->Rsp &= 0xFFFFFFFFFFFFFFF0;
+ 				ptrs->ContextRecord->Rsp |= 8;
+ 
+ 				return EXCEPTION_CONTINUE_EXECUTION;
+ 			}
+ 		}
 		}
 	}
 
